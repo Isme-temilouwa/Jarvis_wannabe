@@ -1,0 +1,11 @@
+.env
+settings.py
+memory_json
+memory.json
+history.json
+remind.json
+output.wav
+record.wav
+.DS_Store
+venv/
+__pycache__/
