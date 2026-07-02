@@ -1,0 +1,8 @@
+anthropic
+tavily-python
+groq
+sounddevice
+scipy
+numpy
+pyttsx3
+python-dotenv

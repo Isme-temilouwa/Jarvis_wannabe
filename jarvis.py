@@ -50,13 +50,23 @@ def check_logic():
         with lock:
             for reminder in reminders:
                 if datetime.now() >= reminder['due']:
-                    print('Reminder: ' + reminder['content'])
+                    speak('Reminder: ' + reminder['content'])
                 else:
                     still_pending.append(reminder)
             reminders = still_pending
 thread = threading.Thread(target=check_logic)
 thread.start()
-                    
+
+
+def check_reminders():
+    with lock:
+        if not reminders:
+            return "You have no pending reminders."
+        output = ''
+        for reminder in reminders:
+            output += 'Reminder: ' + reminder['content'] + ', due ' + str(reminder['due']) + '\n'
+        return output
+        
 
 def listen():
     fs = 44100
@@ -78,7 +88,6 @@ def set_reminder(content, minutes):
     reminder = {'content':content, 'due':due}
     with lock:
         reminders.append(reminder)
-        print('AFTER APPEND:', reminders)
     return f"I will remind you about  {content}"
 
 
@@ -197,7 +206,18 @@ tools = [
             },
             'required' : ['content','minutes'],
         },
-    }
+    },
+    
+    
+   {
+    'name': 'Check_Reminders',
+    'description': "Use this tool whenever the user asks what reminders they have, what's pending, or wants to see their current reminders. It reads the live list of active reminders and returns them. Call this instead of guessing from the conversation, it reflects the actual pending reminders in the system.",
+    'input_schema': {
+        'type': 'object',
+        'properties': {},
+    },
+},
+    
 ]
 
 system_prompt = "You are a helpful assistant and personal assistant to the user. i built you. You have a remind_me tool make sure you use it whenever i ask to be reminded.  Here is what you know about them:\n"
@@ -246,12 +266,16 @@ while True:
                 answer = 'Could not save that to memory.'
                 print(e)
         elif tool_block.name == 'Remind_Me':
-            print('REMIND_ME TOOL CALLED')
             try:
                 answer = set_reminder(tool_block.input.get('content'), tool_block.input.get('minutes'))
                 
             except Exception as e:
                 answer = 'Could not set your reminder'
+        elif tool_block.name == 'Check_Reminders':
+            try:
+                answer = check_reminders()
+            except Exception as e:
+                answer = 'Cant check your pending reminders'
         else:
             answer = "Unknown tool requested: " + tool_block.name
         convo.append({'role':'assistant', 'content':response.content})
@@ -286,6 +310,8 @@ while True:
     for entry in convo:
         if isinstance(entry['content'],str):
             clean_convo.append(entry)
+        else:
+            clean_convo.append({'role': entry['role'],'content': '[tool was used]'})
     with open('history.json', 'w') as f:
         json.dump(clean_convo,f)    
 
