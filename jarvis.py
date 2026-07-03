@@ -86,7 +86,13 @@ def summarize_convo():
             max_tokens=512,
             messages=[{'role': 'user', 'content': 'Summarize this conversation in one short paragraph. Keep any facts, decisions, and unfinished tasks:\n' + old_text}]
         )
-        summary_text = response.content[0].text
+        summary_text = None
+        for block in response.content:
+            if block.type == 'text':
+                 summary_text = block.text
+        if summary_text is None:
+            print('DEBUG: summary returned no text block')
+            return
     except Exception as e:
         print('DEBUG: summary failed,', e)
         return
